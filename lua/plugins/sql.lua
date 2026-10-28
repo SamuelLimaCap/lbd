@@ -26,6 +26,16 @@ return {
         sources = {
           require("dbee.sources").FileSource:new(conexoes),
         },
+        editor = {
+          -- a lista substitui a padrão (mesclagem por índice), então os mappings do dbee vão repetidos aqui
+          mappings = {
+            { key = "BB", mode = "v", action = "run_selection" },
+            { key = "BB", mode = "n", action = "run_file" },
+            { key = "<CR>", mode = "n", action = "run_under_cursor" },
+            -- query sob o cursor até o ";" (ou "/" no PL/SQL), sem precisar selecionar
+            { key = "BQ", mode = "n", action = function() require("lbd.executar").rodar() end },
+          },
+        },
       })
       -- Postgres: lista os databases do servidor; Oracle: lista os schemas (como no DBeaver)
       vim.api.nvim_create_user_command("BancoSelecionar", function()
@@ -45,6 +55,39 @@ return {
         require("lbd.lote").reabrir()
       end, { desc = "Reabrir a lista do último lote" })
     end,
+  },
+
+  -- Formatação de SQL (<leader>cf): sql-formatter com o dialeto da conexão ativa do Dbee
+  -- (Oracle -> plsql, Postgres -> postgresql). Só sob demanda: não formata ao salvar.
+  {
+    "stevearc/conform.nvim",
+    opts = {
+      formatters_by_ft = { sql = { "sql_formatter" } },
+      formatters = {
+        sql_formatter = {
+          prepend_args = function()
+            local ok, conn = pcall(function()
+              return require("dbee.api").core.get_current_connection()
+            end)
+            local tipo = ok and conn and conn.type
+            local dialeto = tipo == "oracle" and "plsql" or tipo == "postgres" and "postgresql" or "sql"
+            return { "-l", dialeto, "-c", '{"keywordCase":"upper","tabWidth":2,"expressionWidth":80}' }
+          end,
+        },
+      },
+    },
+    init = function()
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = "sql",
+        callback = function(ev)
+          vim.b[ev.buf].autoformat = false
+        end,
+      })
+    end,
+  },
+  {
+    "mason-org/mason.nvim",
+    opts = { ensure_installed = { "sql-formatter" } },
   },
 
   -- Autocomplete de tabelas/colunas (só do schema/database atual) nos arquivos SQL

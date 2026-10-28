@@ -44,6 +44,8 @@ local SECOES = {
       { "<CR>", "rodar o bloco sob o cursor (até linha em branco)" },
       { "BB", "rodar a nota inteira (normal)" },
       { "BB (visual)", "rodar só a seleção" },
+      { "BQ", "rodar a query sob o cursor (até o ; ou / do PL/SQL)" },
+      { "<leader>cf", "formatar o SQL (dialeto da conexão ativa)" },
       { "autocomplete", "tabelas do schema atual; colunas das tabelas do FROM" },
       { "alias.", "colunas só daquela tabela/alias" },
     },

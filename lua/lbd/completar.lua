@@ -34,19 +34,27 @@ local function esc(s)
   return (s:gsub("'", "''"))
 end
 
-local function sql_tabelas(tipo)
+-- Oracle: owner explícito do schema escolhido no seletor. Não dá pra confiar no CURRENT_SCHEMA da sessão:
+-- o dbee usa um pool de conexões e consultas em paralelo abrem sessões novas (sem o ALTER SESSION).
+local function owner_oracle(conn_id)
+  local nome = escopos[conn_id]
+  return nome and ("'" .. esc(nome) .. "'") or "sys_context('USERENV','CURRENT_SCHEMA')"
+end
+
+local function sql_tabelas(tipo, conn_id)
   if tipo == "oracle" then
-    return [[select table_name, 'tabela' from all_tables where owner = sys_context('USERENV','CURRENT_SCHEMA')
+    local owner = owner_oracle(conn_id)
+    return ([[select table_name, 'tabela' from all_tables where owner = %s
 union all
-select view_name, 'view' from all_views where owner = sys_context('USERENV','CURRENT_SCHEMA')]]
+select view_name, 'view' from all_views where owner = %s]]):format(owner, owner)
   end
   return [[select table_name, case table_type when 'VIEW' then 'view' else 'tabela' end
 from information_schema.tables where table_schema = current_schema()]]
 end
 
-local function sql_colunas(tipo, schema, tabela, citado)
+local function sql_colunas(tipo, conn_id, schema, tabela, citado)
   if tipo == "oracle" then
-    local owner = schema and ("'" .. esc(schema:upper()) .. "'") or "sys_context('USERENV','CURRENT_SCHEMA')"
+    local owner = schema and ("'" .. esc(schema:upper()) .. "'") or owner_oracle(conn_id)
     local nome = citado and tabela or tabela:upper()
     return ("select column_name, data_type from all_tab_columns where owner = %s and table_name = '%s' order by column_id")
       :format(owner, esc(nome))
@@ -90,7 +98,7 @@ end
 
 local function tabelas(conn, cb)
   local k = kinds()
-  carregar(conn.id .. "|" .. escopo(conn.id) .. "|tabelas", conn.id, sql_tabelas(conn.type), function(linhas)
+  carregar(conn.id .. "|" .. escopo(conn.id) .. "|tabelas", conn.id, sql_tabelas(conn.type, conn.id), function(linhas)
     local itens = {}
     for _, l in ipairs(linhas) do
       table.insert(itens, {
@@ -107,7 +115,7 @@ end
 local function colunas(conn, ref, cb)
   local k = kinds()
   local chave = ("%s|%s|col|%s.%s"):format(conn.id, escopo(conn.id), ref.schema or "", ref.tabela:lower())
-  carregar(chave, conn.id, sql_colunas(conn.type, ref.schema, ref.tabela, ref.citado), function(linhas)
+  carregar(chave, conn.id, sql_colunas(conn.type, conn.id, ref.schema, ref.tabela, ref.citado), function(linhas)
     local itens = {}
     for _, l in ipairs(linhas) do
       table.insert(itens, {
