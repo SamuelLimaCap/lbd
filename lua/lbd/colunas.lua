@@ -1,7 +1,8 @@
 -- lbd: colunas de uma tabela (Postgres ou Oracle, conforme a conexão ativa) + dica Java/Hibernate.
 --   <leader>dc / :BancoColunas [tabela] -> escolhe a tabela (busca por nome) e abre a janela
 --   Na janela: buffer normal (/ busca, v / V / <C-v> + y copiam), s ordena A→Z / Z→A / original,
---   yA copia tudo, yj copia o campo Java da linha, yJ copia todos os campos, t troca a tabela.
+--   yA copia tudo, yj copia o campo Java da linha, yJ copia todos os campos, t troca a tabela,
+--   d mostra o CREATE da tabela e gt as triggers dela (lbd/fonte.lua).
 local sql = require("lbd.sql")
 
 local M = {}
@@ -332,7 +333,7 @@ local function desenhar()
     border = "rounded",
     title = (" %s · %d colunas · %s · %s "):format(J.tabela, #J.colunas, NOME_ORDEM[J.ordem], J.conn.name),
     title_pos = "center",
-    footer = " / buscar · s ordenar · yA copiar tudo · yj/yJ Java · <C-v> bloco · t trocar · q fechar · ? ajuda ",
+    footer = " / buscar · s ordenar · yA copiar tudo · yj/yJ Java · d CREATE · gt triggers · t trocar · q fechar · ? ajuda ",
     footer_pos = "center",
   }
   if J.win and vim.api.nvim_win_is_valid(J.win) then
@@ -390,6 +391,14 @@ local function criar_buffer()
     end
     copiar(table.concat(blocos, "\n\n"), "Todos os campos Java copiados.")
   end, "Colunas: copiar todos os campos Java")
+  map("d", function()
+    local tabela = J.tabela
+    fechar()
+    require("lbd.fonte").tabela(tabela)
+  end, "Colunas: CREATE da tabela")
+  map("gt", function()
+    require("lbd.fonte").listar("trigger", J.tabela)
+  end, "Colunas: triggers da tabela")
   map("t", function()
     fechar()
     M.abrir()

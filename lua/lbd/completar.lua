@@ -21,6 +21,11 @@ function M.definir_escopo(conn_id, nome)
   M.precarregar()
 end
 
+-- Database (PG) / schema (Oracle) escolhido no seletor, ou nil se ainda não trocou
+function M.escopo_atual(conn_id)
+  return escopos[conn_id]
+end
+
 ---Limpa o cache (todas as conexões, ou só uma)
 function M.limpar(conn_id)
   for chave in pairs(cache) do

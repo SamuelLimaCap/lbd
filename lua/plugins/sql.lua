@@ -20,6 +20,10 @@ return {
       { "<leader>dC", function() require("lbd.colunas").abrir(vim.fn.expand("<cword>")) end, desc = "Banco: colunas da tabela sob o cursor" },
       { "<leader>da", function() require("lbd.lote").iniciar() end, mode = { "n", "x" }, desc = "Banco: rodar a query em várias bases (lote)" },
       { "<leader>dl", function() require("lbd.lote").reabrir() end, desc = "Banco: reabrir a lista do último lote" },
+      { "<leader>do", function() require("lbd.fonte").listar("codigo") end, desc = "Banco: código de procedure/function/package/view" },
+      { "<leader>dt", function() require("lbd.fonte").listar("trigger") end, desc = "Banco: triggers (código)" },
+      { "<leader>dO", function() require("lbd.fonte").sob_cursor() end, desc = "Banco: código/CREATE do objeto sob o cursor" },
+      { "<leader>dd", function() require("lbd.fonte").listar("tabela") end, desc = "Banco: CREATE da tabela (+ clonar sem dados)" },
     },
     config = function()
       require("dbee").setup({
@@ -44,7 +48,9 @@ return {
 
       require("lbd.completar").setup() -- autocomplete: escopo acompanha a troca de database
       require("lbd.resultado").setup() -- grade: o/O (order by), ? (ajuda)
+      require("lbd.grade").setup() -- grade própria (células cortadas) + painel de valor (K, <C-l>)
       require("lbd.colunas").setup() -- :BancoColunas [tabela]
+      require("lbd.fonte").setup() -- :BancoFonte, :BancoTriggers, :BancoCreate
       require("lbd.ajuda").setup() -- help da árvore com todos os atalhos + :BancoAjuda
 
       -- Lote: mesma query em vários schemas (Oracle) / databases (Postgres)

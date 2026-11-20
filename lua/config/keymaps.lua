@@ -62,3 +62,6 @@ keymap.set(
   "3<C-w>j<Leader>wd<Leader>w1",
   { desc = "Delete error window", silent = true, remap = true }
 )
+
+-- arquivos fora do ~/.config (padrão em todas as configs)
+require("externos").setup()
